@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#EE4D2D" />
+  <meta name="description" content="ARGUS — Auditoria e Registro Geral de Unidades Shopee. Relatório fotográfico de organização de área e 5S." />
+  <title>ARGUS · Relatório Fotográfico de Operações</title>
+
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 48 48%22%3E%3Crect width=%2248%22 height=%2248%22 rx=%2210%22 fill=%22%23EE4D2D%22/%3E%3Cellipse cx=%2224%22 cy=%2224%22 rx=%2216%22 ry=%229%22 fill=%22white%22/%3E%3Ccircle cx=%2224%22 cy=%2224%22 r=%225.5%22 fill=%22%23EE4D2D%22/%3E%3C/svg%3E" />
+  <style>
+/* ═══════════════════════════════════════════════════════════════
+   ARGUS — Auditoria e Registro Geral de Unidades Shopee
+   Relatório Fotográfico de Operações (Fulfillment)
+   Paleta: laranja Shopee (#EE4D2D), branco e cinzas.
+   Suporta modo claro/escuro via atributo [data-theme] no <html>.
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  --orange: #EE4D2D;
+  --orange-dark: #D8431F;
+  --orange-soft: #FFF1EC;
+
+  --bg: #F5F5F7;
+  --surface: #FFFFFF;
+  --surface-2: #FAFAFA;
+  --border: #E5E5EA;
+
+  --text: #1F1F23;
+  --text-2: #6B6B72;
+  --text-3: #9A9AA2;
+
+  --ok: #16A34A;
+  --danger: #DC2626;
+
+  --radius: 16px;
+  --radius-sm: 10px;
+  --shadow: 0 1px 3px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.05);
+  --topbar-h: 60px;
+}
+
+[data-theme="dark"] {
+  --bg: #131316;
+  --surface: #1D1D22;
+  --surface-2: #26262C;
+  --border: #34343C;
+  --text: #F2F2F5;
+  --text-2: #ABABB4;
+  --text-3: #77777F;
+  --orange-soft: #3A241E;
+  --shadow: 0 1px 3px rgba(0,0,0,.4), 0 8px 22px rgba(0,0,0,.35);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background .25s ease, color .25s ease;
+}
+
+.hidden { display: none !important; }
+
+/* ─── Barra superior ─────────────────────────────────────────── */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--topbar-h);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 16px;
+  padding-top: env(safe-area-inset-top);
+  background: var(--orange);
+  color: #fff;
+  box-shadow: 0 2px 10px rgba(238,77,45,.35);
+}
+
+.topbar__brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.topbar__logo { width: 34px; height: 34px; flex: none; }
+.topbar__logo .eye__outline { fill: rgba(255,255,255,.15); stroke: #fff; stroke-width: 2.4; }
+.topbar__logo .eye__iris  { fill: #fff; }
+.topbar__logo .eye__pupil { fill: var(--orange); }
+.topbar__logo .eye__glint { fill: #fff; }
+.topbar__titles { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.topbar__app { font-weight: 800; font-size: 16px; letter-spacing: .12em; white-space: nowrap; }
+.topbar__sub { font-size: 10.5px; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.topbar__actions { display: flex; align-items: center; gap: 8px; }
+
+.badge {
+  background: rgba(255,255,255,.18);
+  border: 1px solid rgba(255,255,255,.35);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.iconbtn {
+  width: 40px; height: 40px;
+  border: none; border-radius: 12px;
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  display: grid; place-items: center;
+  cursor: pointer;
+  transition: background .2s;
+}
+.iconbtn:active { background: rgba(255,255,255,.3); }
+
+.icon { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+.icon--sun { display: none; }
+[data-theme="dark"] .icon--moon { display: none; }
+[data-theme="dark"] .icon--sun { display: block; }
+
+/* ─── Barra de progresso ─────────────────────────────────────── */
+.progress {
+  position: fixed;
+  top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px));
+  left: 0; right: 0;
+  height: 26px;
+  z-index: 49;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+.progress__bar {
+  height: 100%;
+  width: 0;
+  background: linear-gradient(90deg, var(--orange), #FF7A50);
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+.progress__label {
+  position: absolute;
+  inset: 0;
+  display: grid; place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text);
+  mix-blend-mode: normal;
+}
+
+/* ─── Layout geral ───────────────────────────────────────────── */
+.app {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) + 16px) 16px 40px;
+}
+body.has-progress .app { padding-top: calc(var(--topbar-h) + env(safe-area-inset-top, 0px) + 26px + 16px); }
+
+.view { animation: fadeUp .35s ease both; }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .view, .progress__bar { animation: none; transition: none; }
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 18px;
+}
+
+/* ─── Login / Herói ARGUS ────────────────────────────────────── */
+.login { display: flex; flex-direction: column; gap: 18px; padding-top: 8px; }
+
+.hero {
+  position: relative;
+  overflow: hidden;
+  text-align: center;
+  padding: 30px 20px 26px;
+  border-radius: var(--radius);
+  background: linear-gradient(150deg, var(--orange) 0%, #FF6A3D 60%, #FF8A5C 100%);
+  color: #fff;
+  box-shadow: 0 10px 28px rgba(238,77,45,.35);
+}
+
+/* Padrão sutil dos "cem olhos" (referência à cauda do pavão) */
+.hero__eyes { position: absolute; inset: 0; pointer-events: none; }
+.hero__eyes span {
+  position: absolute;
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.22);
+}
+.hero__eyes span::after {
+  content: '';
+  position: absolute; inset: 4px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.28);
+}
+.hero__eyes span:nth-child(1)  { top: 12%; left: 6%;  transform: scale(.8); }
+.hero__eyes span:nth-child(2)  { top: 30%; left: 13%; }
+.hero__eyes span:nth-child(3)  { top: 58%; left: 5%;  transform: scale(1.2); }
+.hero__eyes span:nth-child(4)  { top: 78%; left: 15%; transform: scale(.7); }
+.hero__eyes span:nth-child(5)  { top: 16%; left: 26%; transform: scale(.6); }
+.hero__eyes span:nth-child(6)  { top: 72%; left: 30%; }
+.hero__eyes span:nth-child(7)  { top: 10%; right: 24%; transform: scale(.9); }
+.hero__eyes span:nth-child(8)  { top: 66%; right: 28%; transform: scale(.6); }
+.hero__eyes span:nth-child(9)  { top: 20%; right: 11%; transform: scale(1.15); }
+.hero__eyes span:nth-child(10) { top: 44%; right: 5%;  transform: scale(.75); }
+.hero__eyes span:nth-child(11) { top: 68%; right: 12%; }
+.hero__eyes span:nth-child(12) { top: 86%; right: 34%; transform: scale(.55); }
+
+.hero__logo { position: relative; width: 84px; height: 84px; }
+.hero__logo .eye__outline { fill: rgba(255,255,255,.14); stroke: #fff; stroke-width: 2; }
+.hero__logo .eye__iris   { fill: #fff; }
+.hero__logo .eye__pupil  { fill: var(--orange); }
+.hero__logo .eye__glint  { fill: #fff; }
+
+.hero__wordmark {
+  position: relative;
+  margin: 8px 0 2px;
+  font-size: 40px;
+  font-weight: 900;
+  letter-spacing: .22em;
+  text-indent: .22em; /* compensa o letter-spacing p/ centralizar */
+}
+.hero__acronym {
+  position: relative;
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  opacity: .95;
+}
+.hero__chips {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+.chip {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.16);
+  border: 1px solid rgba(255,255,255,.35);
+}
+.hero__tagline {
+  position: relative;
+  margin: 10px auto 0;
+  max-width: 340px;
+  font-size: 12px;
+  font-style: italic;
+  opacity: .85;
+  border-top: 1px solid rgba(255,255,255,.3);
+  padding-top: 10px;
+}
+
+.card__heading { margin: 0 0 2px; font-size: 16px; }
+
+.login__foot {
+  margin: 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: .05em;
+}
+
+.minidash {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  gap: 2px 12px;
+  background: var(--orange-soft);
+  border: 1px solid var(--orange);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+}
+.minidash__num { grid-row: span 2; font-size: 34px; font-weight: 800; color: var(--orange); }
+.minidash__txt { font-size: 13px; line-height: 1.25; color: var(--text-2); }
+.minidash__last { font-size: 11px; color: var(--text-3); }
+
+.card--form { display: flex; flex-direction: column; gap: 16px; }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field__label { font-size: 13px; font-weight: 600; color: var(--text-2); }
+.field__label b { color: var(--orange); }
+.field__error { display: none; font-size: 12px; color: var(--danger); }
+.field.invalid .field__error { display: block; }
+.field.invalid input, .field.invalid select { border-color: var(--danger); }
+
+input[type="email"], input[type="text"], select, textarea {
+  width: 100%;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface-2);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 13px 14px;
+  outline: none;
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus, textarea:focus {
+  border-color: var(--orange);
+  box-shadow: 0 0 0 3px rgba(238,77,45,.15);
+}
+textarea { resize: vertical; min-height: 64px; }
+
+.segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.segmented__opt {
+  font: inherit;
+  font-weight: 700;
+  padding: 13px 0;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: var(--surface-2);
+  color: var(--text-2);
+  cursor: pointer;
+  transition: all .18s;
+}
+.segmented__opt.active {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(238,77,45,.35);
+}
+
+/* ─── Botões ─────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 700;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  cursor: pointer;
+  transition: transform .12s, box-shadow .2s, background .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.btn:active { transform: scale(.98); }
+.btn--xl { padding: 16px 20px; font-size: 16px; width: 100%; }
+.btn--primary { background: var(--orange); color: #fff; box-shadow: 0 6px 16px rgba(238,77,45,.35); }
+.btn--primary:hover { background: var(--orange-dark); }
+.btn--primary:disabled { opacity: .55; cursor: not-allowed; box-shadow: none; }
+.btn--secondary { background: var(--surface); color: var(--orange); border: 1.5px solid var(--orange); }
+.btn--ghost { background: transparent; color: var(--text-2); }
+.btn--ghost:hover { color: var(--danger); }
+
+.draftnotice {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ok);
+  text-align: center;
+}
+
+/* ─── Checklist ──────────────────────────────────────────────── */
+.checklist { display: flex; flex-direction: column; gap: 14px; }
+
+.checklist__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.checklist__meta strong { color: var(--text); }
+
+.item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color .25s;
+}
+.item.complete { border-color: var(--ok); }
+
+.item__head { display: flex; align-items: center; gap: 10px; }
+.item__num {
+  width: 30px; height: 30px; flex: none;
+  border-radius: 9px;
+  display: grid; place-items: center;
+  font-size: 13px; font-weight: 800;
+  background: var(--orange-soft);
+  color: var(--orange);
+}
+.item.complete .item__num { background: var(--ok); color: #fff; }
+.item__title { font-weight: 700; font-size: 15px; flex: 1; }
+.item__req { font-size: 11px; color: var(--text-3); }
+.item__req.required { color: var(--orange); font-weight: 700; }
+
+.item__photos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+.thumb {
+  position: relative;
+  aspect-ratio: 4/3;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb__del {
+  position: absolute;
+  top: 4px; right: 4px;
+  width: 26px; height: 26px;
+  border: none;
+  border-radius: 8px;
+  background: rgba(0,0,0,.55);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: grid; place-items: center;
+}
+
+.item__actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.item__actions .btn { flex: 1; min-width: 130px; padding: 12px 10px; font-size: 14px; }
+
+/* ─── Rodapé do checklist / tela final ───────────────────────── */
+.checklist__footer { display: flex; flex-direction: column; gap: 8px; padding: 8px 0 24px; }
+
+.done { text-align: center; display: flex; flex-direction: column; gap: 14px; align-items: center; padding: 32px 20px; }
+.done__check {
+  width: 72px; height: 72px;
+  border-radius: 50%;
+  background: var(--ok);
+  color: #fff;
+  display: grid; place-items: center;
+  animation: pop .4s cubic-bezier(.2,1.4,.4,1) both;
+}
+.done__check .icon { width: 36px; height: 36px; stroke-width: 3; }
+@keyframes pop { from { transform: scale(.4); opacity: 0; } }
+.done h2 { margin: 0; }
+.done__file { margin: 0; font-size: 13px; color: var(--text-2); word-break: break-all; }
+.done__actions { display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 360px; }
+.done__hint { margin: 0; font-size: 12px; color: var(--text-3); }
+
+/* ─── Toast ──────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--text);
+  color: var(--bg);
+  padding: 12px 18px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .25s, transform .25s;
+  z-index: 100;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ─── Desktop ────────────────────────────────────────────────── */
+@media (min-width: 720px) {
+  .login { padding-top: 24px; }
+  .item__actions .btn { flex: none; }
+}
+
+  </style>
+
+  <!-- jsPDF (geração do PDF no navegador) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+</head>
+<body>
+
+  <!-- ══════════════ BARRA SUPERIOR FIXA ══════════════ -->
+  <header class="topbar">
+    <div class="topbar__brand">
+      <!-- Emblema ARGUS: o olho que tudo vê -->
+      <svg class="topbar__logo" viewBox="0 0 48 48" aria-hidden="true">
+        <path class="eye__outline" d="M24 12C13 12 5.5 21 3 24c2.5 3 10 12 21 12s18.5-9 21-12c-2.5-3-10-12-21-12Z"/>
+        <circle class="eye__iris" cx="24" cy="24" r="8"/>
+        <circle class="eye__pupil" cx="24" cy="24" r="3.6"/>
+        <circle class="eye__glint" cx="27" cy="21" r="1.6"/>
+      </svg>
+      <div class="topbar__titles">
+        <span class="topbar__app">ARGUS</span>
+        <span class="topbar__sub">Relatório Fotográfico de Operações</span>
+      </div>
+    </div>
+
+    <div class="topbar__actions">
+      <span id="sessionBadge" class="badge hidden" title="Sessão atual"></span>
+      <button id="themeToggle" class="iconbtn" type="button" aria-label="Alternar modo escuro" title="Modo escuro">
+        <svg viewBox="0 0 24 24" class="icon icon--moon"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"/></svg>
+        <svg viewBox="0 0 24 24" class="icon icon--sun"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- Barra de progresso (visível apenas no checklist) -->
+  <div id="progressWrap" class="progress hidden" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div id="progressBar" class="progress__bar"></div>
+    <span id="progressLabel" class="progress__label">0%</span>
+  </div>
+
+  <main id="app" class="app">
+
+    <!-- ══════════════ TELA 1 — LOGIN ══════════════ -->
+    <section id="view-login" class="view">
+      <div class="login">
+
+        <!-- Herói ARGUS: emblema, marca e lema -->
+        <div class="hero">
+          <div class="hero__eyes" aria-hidden="true">
+            <!-- padrão sutil de "cem olhos" (cauda do pavão) -->
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span><span></span><span></span><span></span>
+            <span></span><span></span>
+          </div>
+          <svg class="hero__logo" viewBox="0 0 48 48" aria-hidden="true">
+            <path class="eye__outline" d="M24 12C13 12 5.5 21 3 24c2.5 3 10 12 21 12s18.5-9 21-12c-2.5-3-10-12-21-12Z"/>
+            <circle class="eye__iris" cx="24" cy="24" r="8"/>
+            <circle class="eye__pupil" cx="24" cy="24" r="3.6"/>
+            <circle class="eye__glint" cx="27" cy="21" r="1.6"/>
+          </svg>
+          <h1 class="hero__wordmark">ARGUS</h1>
+          <p class="hero__acronym">Auditoria e Registro Geral de Unidades Shopee</p>
+          <div class="hero__chips" aria-hidden="true">
+            <span class="chip">Organização de Área</span>
+            <span class="chip">5S</span>
+            <span class="chip">Encerramento de Turno</span>
+          </div>
+          <p class="hero__tagline">Os cem olhos da operação — nada encerra o turno sem ser registrado.</p>
+        </div>
+
+        <!-- Mini dashboard: relatórios já gerados neste dispositivo -->
+        <div id="miniDash" class="minidash hidden">
+          <div class="minidash__num" id="dashCount">0</div>
+          <div class="minidash__txt">relatórios gerados<br/>neste dispositivo</div>
+          <div class="minidash__last" id="dashLast"></div>
+        </div>
+
+        <form id="loginForm" class="card card--form" novalidate>
+          <h2 class="card__heading">Iniciar checklist do turno</h2>
+
+          <label class="field">
+            <span class="field__label">E-mail corporativo <b>*</b></span>
+            <input id="email" type="email" inputmode="email" autocomplete="email"
+                   placeholder="nome.sobrenome@shopee.com" required />
+            <span class="field__error" data-error-for="email">Informe um e-mail corporativo válido.</span>
+          </label>
+
+          <div class="field">
+            <span class="field__label">Turno <b>*</b></span>
+            <div class="segmented" id="turnoGroup" role="radiogroup" aria-label="Turno">
+              <button type="button" class="segmented__opt" data-turno="T1">T1</button>
+              <button type="button" class="segmented__opt" data-turno="T2">T2</button>
+              <button type="button" class="segmented__opt" data-turno="T3">T3</button>
+            </div>
+            <span class="field__error" data-error-for="turno">Selecione o turno.</span>
+          </div>
+
+          <label class="field">
+            <span class="field__label">Área <b>*</b></span>
+            <select id="area" required>
+              <option value="" disabled selected>Selecione a área…</option>
+              <option>Inbound HS</option>
+              <option>Inbound MZ</option>
+              <option>Checking MZ</option>
+              <option>Checking HS</option>
+              <option>Picking</option>
+              <option>Inventário</option>
+              <option>Qualidade</option>
+            </select>
+            <span class="field__error" data-error-for="area">Selecione a área.</span>
+          </label>
+
+          <button type="submit" class="btn btn--primary btn--xl">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M5 12h14M13 6l6 6-6 6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Iniciar Relatório
+          </button>
+
+          <p id="draftNotice" class="draftnotice hidden">
+            Rascunho encontrado — seus dados e fotos foram restaurados.
+          </p>
+        </form>
+
+        <p class="login__foot">ARGUS · Fulfillment Shopee · uso interno</p>
+      </div>
+    </section>
+
+    <!-- ══════════════ TELA 2 — CHECKLIST ══════════════ -->
+    <section id="view-checklist" class="view hidden">
+      <div class="checklist">
+        <div class="checklist__meta card" id="metaCard">
+          <!-- preenchido via JS: gestor, turno, área, data, GPS -->
+        </div>
+
+        <div id="cards"><!-- cards dos itens gerados via JS --></div>
+
+        <div class="checklist__footer">
+          <button id="btnGenerate" class="btn btn--primary btn--xl" type="button">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Gerar Relatório
+          </button>
+          <button id="btnReset" class="btn btn--ghost" type="button">Descartar rascunho</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ TELA FINAL ══════════════ -->
+    <section id="view-done" class="view hidden">
+      <div class="done card">
+        <div class="done__check">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M4 12.5 9.5 18 20 6.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <h2>Relatório gerado!</h2>
+        <p id="doneFilename" class="done__file"></p>
+        <div class="done__actions">
+          <button id="btnShare" class="btn btn--primary btn--xl" type="button">
+            <svg viewBox="0 0 24 24" class="icon"><path d="M12 3v12M8 7l4-4 4 4M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Compartilhar PDF
+          </button>
+          <button id="btnDownload" class="btn btn--secondary btn--xl" type="button">Baixar novamente</button>
+          <button id="btnNew" class="btn btn--ghost" type="button">Novo relatório</button>
+        </div>
+        <p class="done__hint">Compartilhe diretamente nos grupos do SeATalk ou WhatsApp.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Toast de mensagens -->
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- Input de arquivo global (câmera / galeria), reutilizado pelos cards -->
+  <input type="file" id="fileCamera" accept="image/*" capture="environment" hidden />
+  <input type="file" id="fileGallery" accept="image/*" hidden />
+
+  <script>
+/* ═══════════════════════════════════════════════════════════════
+   pdf.js — ARGUS · Geração do Relatório Fotográfico em PDF (jsPDF)
+   Expõe window.PDFReport.generate(state, items)
+   → Promise<{ blob, filename }>
+   ═══════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+window.PDFReport = (() => {
+
+  /* Paleta e métricas (A4 retrato, unidades em mm) */
+  const ORANGE = [238, 77, 45];
+  const DARK   = [31, 31, 35];
+  const GRAY   = [107, 107, 114];
+  const LIGHT  = [245, 245, 247];
+
+  const PAGE_W = 210, PAGE_H = 297;
+  const M = 15;                       // margem
+  const CW = PAGE_W - M * 2;          // largura útil
+
+  /**
+   * Gera o PDF completo.
+   * @param {object} state — estado da aplicação (app.js)
+   * @param {Array}  items — definição dos itens do checklist
+   */
+  async function generate(state, items) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
+
+    const now = new Date();
+    drawCover(doc, state, items, now);
+
+    /* ── Uma seção por item (nome + foto(s) + observação) ── */
+    for (let i = 0; i < items.length; i++) {
+      const def = items[i];
+      const data = state.items[i];
+      if (!def.required && data.photos.length === 0 && !data.obs.trim()) continue; // pula extras vazios
+
+      doc.addPage();
+      drawPageHeader(doc, state);
+      let y = 32;
+
+      // Título do item
+      doc.setFillColor(...ORANGE);
+      doc.roundedRect(M, y, 10, 10, 2.5, 2.5, 'F');
+      doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(12);
+      doc.text(String(i + 1), M + 5, y + 6.6, { align: 'center' });
+      doc.setTextColor(...DARK).setFontSize(15);
+      doc.text(def.name, M + 14, y + 7);
+      y += 16;
+
+      // Foto(s) — centralizadas, mantendo proporção
+      for (const photo of data.photos) {
+        const dim = await imageSize(photo.dataUrl);
+        const maxW = CW, maxH = 150;
+        const s = Math.min(maxW / dim.w, maxH / dim.h);
+        const w = dim.w * s, h = dim.h * s;
+        if (y + h > PAGE_H - 30) { doc.addPage(); drawPageHeader(doc, state); y = 32; }
+        const x = M + (CW - w) / 2;
+        doc.setDrawColor(...LIGHT).setLineWidth(0.4);
+        doc.roundedRect(x - 1, y - 1, w + 2, h + 2, 2, 2, 'S');
+        doc.addImage(photo.dataUrl, 'JPEG', x, y, w, h, undefined, 'FAST');
+        y += h + 6;
+      }
+      if (data.photos.length === 0) {
+        doc.setTextColor(...GRAY).setFont('helvetica', 'italic').setFontSize(10);
+        doc.text('Sem foto anexada.', M, y);
+        y += 8;
+      }
+
+      // Observação
+      doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...ORANGE);
+      doc.text('OBSERVAÇÃO', M, y + 2);
+      doc.setFont('helvetica', 'normal').setTextColor(...DARK).setFontSize(11);
+      const obs = data.obs.trim() || '—';
+      const lines = doc.splitTextToSize(obs, CW);
+      doc.text(lines, M, y + 8);
+    }
+
+    drawSignaturePage(doc, state, now);
+    addFooters(doc);
+
+    const filename = buildFilename(state, now);
+    return { blob: doc.output('blob'), filename };
+  }
+
+  /* ── Capa / cabeçalho principal ─────────────────────────────── */
+
+  function drawCover(doc, state, items, now) {
+    // Faixa laranja superior
+    doc.setFillColor(...ORANGE);
+    doc.rect(0, 0, PAGE_W, 62, 'F');
+
+    // Emblema ARGUS (olho) desenhado em vetor
+    const ex = M + 8, ey = 20;
+    doc.setFillColor(255, 255, 255);
+    doc.ellipse(ex, ey, 10, 6, 'F');              // esclera
+    doc.setFillColor(...ORANGE);
+    doc.circle(ex, ey, 3.4, 'F');                 // íris/pupila
+    doc.setFillColor(255, 255, 255);
+    doc.circle(ex + 1.2, ey - 1.2, 0.9, 'F');     // brilho
+
+    // Marca + subtítulo
+    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(26);
+    doc.setCharSpace?.(1.2);
+    doc.text('ARGUS', ex + 15, 24);
+    doc.setCharSpace?.(0);
+    doc.setFont('helvetica', 'normal').setFontSize(10);
+    doc.text('Auditoria e Registro Geral de Unidades Shopee', ex + 15, 31);
+
+    doc.setFont('helvetica', 'bold').setFontSize(16);
+    doc.text('Relatório Fotográfico de Operações', M, 44);
+    doc.setFont('helvetica', 'normal').setFontSize(10);
+    doc.text('Organização de Área · 5S · Encerramento de Turno', M, 50.5);
+    doc.setFont('helvetica', 'italic').setFontSize(9);
+    doc.text('Os cem olhos da operação — nada encerra o turno sem ser registrado.', M, 56.5);
+
+    // Bloco de informações
+    let y = 76;
+    doc.setTextColor(...DARK).setFont('helvetica', 'bold').setFontSize(13);
+    doc.text('Informações do Relatório', M, y);
+    doc.setDrawColor(...ORANGE).setLineWidth(0.8);
+    doc.line(M, y + 2.5, M + 62, y + 2.5);
+    y += 12;
+
+    const rows = [
+      ['Data',   now.toLocaleDateString('pt-BR')],
+      ['Hora',   now.toLocaleTimeString('pt-BR')],
+      ['Gestor', state.manager || '—'],
+      ['E-mail', state.email || '—'],
+      ['Turno',  state.turno || '—'],
+      ['Área',   state.area || '—'],
+    ];
+    if (state.gps) rows.push(['Localização', `${state.gps.lat}, ${state.gps.lng}`]);
+
+    rows.forEach(([k, v], i) => {
+      const ry = y + i * 11;
+      if (i % 2 === 0) { doc.setFillColor(...LIGHT); doc.rect(M, ry - 6.5, CW, 11, 'F'); }
+      doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...GRAY);
+      doc.text(k.toUpperCase(), M + 3, ry);
+      doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(...DARK);
+      doc.text(String(v), M + 45, ry);
+    });
+
+    // Sumário de itens
+    let sy = y + rows.length * 11 + 14;
+    doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(...DARK);
+    doc.text('Itens do Checklist', M, sy);
+    doc.setDrawColor(...ORANGE).line(M, sy + 2.5, M + 45, sy + 2.5);
+    sy += 10;
+    doc.setFont('helvetica', 'normal').setFontSize(10);
+    state.items.forEach((it, i) => {
+      const has = it.photos.length > 0;
+      doc.setFont('helvetica', 'bold').setTextColor(...(has ? [22, 163, 74] : GRAY));
+      doc.text(has ? 'OK' : '--', M + 2, sy);
+      doc.setFont('helvetica', 'normal').setTextColor(...DARK);
+      doc.text(`${i + 1}. ${items[i].name}`, M + 12, sy);
+      sy += 6.5;
+    });
+  }
+
+  /* ── Cabeçalho compacto das páginas internas ────────────────── */
+
+  function drawPageHeader(doc, state) {
+    doc.setFillColor(...ORANGE);
+    doc.rect(0, 0, PAGE_W, 18, 'F');
+    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(10);
+    doc.text('ARGUS · Relatório Fotográfico de Operações', M, 11.5);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${state.area} · Turno ${state.turno}`, PAGE_W - M, 11.5, { align: 'right' });
+  }
+
+  /* ── Página de assinatura ───────────────────────────────────── */
+
+  function drawSignaturePage(doc, state, now) {
+    doc.addPage();
+    drawPageHeader(doc, state);
+
+    let y = 60;
+    doc.setTextColor(...DARK).setFont('helvetica', 'bold').setFontSize(14);
+    doc.text('Assinatura Digital', PAGE_W / 2, y, { align: 'center' });
+    y += 34;
+
+    // Nome do gestor em estilo "assinatura"
+    doc.setFont('times', 'italic').setFontSize(24).setTextColor(...ORANGE);
+    doc.text(state.manager || '—', PAGE_W / 2, y, { align: 'center' });
+    y += 8;
+    doc.setDrawColor(...DARK).setLineWidth(0.5);
+    doc.line(PAGE_W / 2 - 55, y, PAGE_W / 2 + 55, y);
+    y += 8;
+    doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(...DARK);
+    doc.text('Gestor Responsável', PAGE_W / 2, y, { align: 'center' });
+    y += 7;
+    doc.setFontSize(9).setTextColor(...GRAY);
+    doc.text(`${state.email} · ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`,
+             PAGE_W / 2, y, { align: 'center' });
+  }
+
+  /* ── Rodapé em todas as páginas ─────────────────────────────── */
+
+  function addFooters(doc) {
+    const n = doc.getNumberOfPages();
+    for (let p = 1; p <= n; p++) {
+      doc.setPage(p);
+      doc.setDrawColor(...LIGHT).setLineWidth(0.4);
+      doc.line(M, PAGE_H - 14, PAGE_W - M, PAGE_H - 14);
+      doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...GRAY);
+      doc.text('Documento gerado automaticamente pelo ARGUS.', M, PAGE_H - 8);
+      doc.text(`Página ${p} de ${n}`, PAGE_W - M, PAGE_H - 8, { align: 'right' });
+    }
+  }
+
+  /* ── Utilidades ─────────────────────────────────────────────── */
+
+  /** Nome do arquivo: 2026-07-14_T2_CheckingHS_RuanAntunes.pdf */
+  function buildFilename(state, now) {
+    const date = now.toISOString().slice(0, 10);
+    const area = (state.area || '').replace(/\s+/g, '');
+    const name = (state.manager || 'Gestor').replace(/\s+/g, '');
+    return `${date}_${state.turno}_${area}_${name}.pdf`;
+  }
+
+  /** Dimensões (px) de uma imagem em dataURL. */
+  function imageSize(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.width, h: img.height });
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+  }
+
+  return { generate };
+})();
+
+  </script>
+  <script>
+/* ═══════════════════════════════════════════════════════════════
+   app.js — ARGUS · Relatório Fotográfico de Operações (Shopee)
+   Lógica principal: estado, rascunho automático, fotos (compressão
+   + carimbo de data/hora/GPS), validação, progresso e navegação.
+   A geração do PDF fica em pdf.js (window.PDFReport).
+   ═══════════════════════════════════════════════════════════════ */
+
+'use strict';
+
+/* ─── Configuração ───────────────────────────────────────────── */
+
+const STORAGE_KEY = 'argus:draft:v1';       // rascunho atual
+const STATS_KEY   = 'argus:stats:v1';       // contador de relatórios gerados
+const THEME_KEY   = 'argus:theme';
+
+const MAX_PHOTOS_PER_ITEM = 3;            // 1 obrigatória + extras opcionais
+const IMG_MAX_DIM = 1080;                 // maior lado da imagem comprimida (px)
+const IMG_QUALITY = 0.65;                 // qualidade JPEG (0–1)
+
+/** Itens do checklist. `required: true` exige ao menos 1 foto. */
+const ITEMS = [
+  { id: 'vista-geral',    name: 'Vista Geral da Área', required: true  },
+  { id: 'housekeeping',   name: 'Housekeeping',        required: true  },
+  { id: 'organizacao-1',  name: 'Organização',         required: true  },
+  { id: 'organizacao-2',  name: 'Organização 2',       required: true  },
+  { id: 'equipamentos',   name: 'Equipamentos',        required: true  },
+  { id: 'nao-conf',       name: 'Não Conformidades',   required: false },
+  { id: 'extra-1',        name: 'Evidência Extra 1',   required: false },
+  { id: 'extra-2',        name: 'Evidência Extra 2',   required: false },
+  { id: 'extra-3',        name: 'Evidência Extra 3',   required: false },
+];
+
+/* ─── Estado ─────────────────────────────────────────────────── */
+
+/** Estado da aplicação (persistido em localStorage como rascunho). */
+let state = blankState();
+
+function blankState() {
+  return {
+    email: '',
+    manager: '',                 // nome derivado do e-mail
+    turno: '',
+    area: '',
+    startedAt: null,             // ISO — início do preenchimento
+    gps: null,                   // { lat, lng } quando autorizado
+    items: ITEMS.map(it => ({ id: it.id, obs: '', photos: [] })),
+  };
+}
+
+/* ─── Atalhos DOM ────────────────────────────────────────────── */
+const $  = (sel) => document.querySelector(sel);
+const $$ = (sel) => [...document.querySelectorAll(sel)];
+
+const views = {
+  login:     $('#view-login'),
+  checklist: $('#view-checklist'),
+  done:      $('#view-done'),
+};
+
+/** Contexto do input de arquivo aberto (índice do item + índice da foto a substituir). */
+let pickCtx = null;
+/** Último PDF gerado (para baixar novamente / compartilhar). */
+let lastPdf = null;
+
+/* ─── Inicialização ──────────────────────────────────────────── */
+
+document.addEventListener('DOMContentLoaded', () => {
+  initTheme();
+  initStatsDash();
+  loadDraft();
+  bindLogin();
+  bindChecklist();
+  bindDone();
+  registerServiceWorker();
+
+  // Se o rascunho já tinha login concluído, volta direto ao checklist.
+  if (state.email && state.turno && state.area && state.startedAt) {
+    enterChecklist(/*restored*/ true);
+  }
+});
+
+/* ─── Tema (modo escuro) ─────────────────────────────────────── */
+
+function initTheme() {
+  const saved = localStorage.getItem(THEME_KEY);
+  if (saved) document.documentElement.dataset.theme = saved;
+  $('#themeToggle').addEventListener('click', () => {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem(THEME_KEY, next);
+  });
+}
+
+/* ─── Dashboard inicial (contador) ───────────────────────────── */
+
+function getStats() {
+  try { return JSON.parse(localStorage.getItem(STATS_KEY)) || { count: 0, last: null }; }
+  catch { return { count: 0, last: null }; }
+}
+
+function bumpStats(filename) {
+  const s = getStats();
+  s.count += 1;
+  s.last = { filename, at: new Date().toISOString() };
+  localStorage.setItem(STATS_KEY, JSON.stringify(s));
+}
+
+function initStatsDash() {
+  const s = getStats();
+  if (s.count > 0) {
+    $('#miniDash').classList.remove('hidden');
+    $('#dashCount').textContent = s.count;
+    if (s.last) {
+      $('#dashLast').textContent =
+        `Último: ${s.last.filename} · ${new Date(s.last.at).toLocaleString('pt-BR')}`;
+    }
+  }
+}
+
+/* ─── Rascunho automático ────────────────────────────────────── */
+
+let saveTimer = null;
+
+/** Salva o estado com debounce para não escrever a cada tecla. */
+function autosave() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (err) {
+      // Estouro de cota (muitas fotos): salva ao menos os dados de
+      // texto (login + observações), descartando as fotos do rascunho.
+      // As fotos já anexadas seguem na memória e entram no PDF normalmente.
+      try {
+        const lite = { ...state, items: state.items.map(it => ({ ...it, photos: [] })) };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(lite));
+        toast('⚠️ Rascunho salvo sem as fotos (limite do navegador). Não feche a página antes de gerar o PDF.');
+      } catch (err2) {
+        toast('⚠️ Não foi possível salvar o rascunho. Não feche a página antes de gerar o PDF.');
+        console.warn('autosave falhou:', err2);
+      }
+    }
+  }, 400);
+}
+
+function loadDraft() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const draft = JSON.parse(raw);
+    if (draft && Array.isArray(draft.items)) {
+      state = Object.assign(blankState(), draft);
+      // Garante que a lista de itens acompanhe mudanças futuras no checklist.
+      state.items = ITEMS.map(it =>
+        draft.items.find(d => d.id === it.id) || { id: it.id, obs: '', photos: [] });
+      if (state.email) {
+        $('#email').value = state.email;
+        $('#draftNotice').classList.remove('hidden');
+      }
+      if (state.turno) selectTurno(state.turno, /*silent*/ true);
+      if (state.area) $('#area').value = state.area;
+    }
+  } catch (err) {
+    console.warn('Falha ao restaurar rascunho:', err);
+  }
+}
+
+function clearDraft() {
+  localStorage.removeItem(STORAGE_KEY);
+  state = blankState();
+}
+
+/* ─── Tela 1: Login ──────────────────────────────────────────── */
+
+function bindLogin() {
+  $$('#turnoGroup .segmented__opt').forEach(btn =>
+    btn.addEventListener('click', () => selectTurno(btn.dataset.turno)));
+
+  $('#loginForm').addEventListener('submit', (ev) => {
+    ev.preventDefault();
+    if (!validateLogin()) return;
+
+    state.email = $('#email').value.trim().toLowerCase();
+    state.manager = managerNameFromEmail(state.email);
+    state.area = $('#area').value;
+    if (!state.startedAt) state.startedAt = new Date().toISOString();
+    autosave();
+    requestGPS();          // opcional — não bloqueia o fluxo
+    enterChecklist();
+  });
+}
+
+function selectTurno(turno, silent = false) {
+  state.turno = turno;
+  $$('#turnoGroup .segmented__opt').forEach(b =>
+    b.classList.toggle('active', b.dataset.turno === turno));
+  markField('turno', true);
+  if (!silent) autosave();
+}
+
+function validateLogin() {
+  const email = $('#email').value.trim();
+  const okEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  const okTurno = !!state.turno;
+  const okArea  = !!$('#area').value;
+
+  markField('email', okEmail);
+  markField('turno', okTurno);
+  markField('area',  okArea);
+  return okEmail && okTurno && okArea;
+}
+
+/** Marca visualmente o campo como válido/inválido. */
+function markField(name, ok) {
+  const err = $(`[data-error-for="${name}"]`);
+  if (err) err.closest('.field').classList.toggle('invalid', !ok);
+}
+
+/** "ruan.antunes@shopee.com" → "Ruan Antunes" */
+function managerNameFromEmail(email) {
+  const local = email.split('@')[0] || '';
+  return local
+    .split(/[._-]+/)
+    .filter(Boolean)
+    .map(p => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(' ');
+}
+
+/* ─── GPS (diferencial, opcional) ────────────────────────────── */
+
+function requestGPS() {
+  if (!('geolocation' in navigator)) return;
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      state.gps = {
+        lat: +pos.coords.latitude.toFixed(6),
+        lng: +pos.coords.longitude.toFixed(6),
+      };
+      autosave();
+      renderMeta();
+    },
+    () => { /* usuário negou — segue sem GPS */ },
+    { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 }
+  );
+}
+
+/* ─── Tela 2: Checklist ──────────────────────────────────────── */
+
+function bindChecklist() {
+  $('#fileCamera').addEventListener('change', onFilePicked);
+  $('#fileGallery').addEventListener('change', onFilePicked);
+  $('#btnGenerate').addEventListener('click', onGenerate);
+  $('#btnReset').addEventListener('click', () => {
+    if (confirm('Descartar o rascunho atual? Todas as fotos serão removidas.')) {
+      clearDraft();
+      location.reload();
+    }
+  });
+}
+
+function enterChecklist(restored = false) {
+  showView('checklist');
+  $('#progressWrap').classList.remove('hidden');
+  document.body.classList.add('has-progress');
+  $('#sessionBadge').classList.remove('hidden');
+  $('#sessionBadge').textContent = `${state.turno} · ${state.area}`;
+  renderMeta();
+  renderCards();
+  updateProgress();
+  if (restored) toast('Rascunho restaurado ✔');
+}
+
+function renderMeta() {
+  const d = new Date(state.startedAt || Date.now());
+  $('#metaCard').innerHTML = `
+    <span>Gestor: <strong>${esc(state.manager)}</strong></span>
+    <span>Turno: <strong>${esc(state.turno)}</strong></span>
+    <span>Área: <strong>${esc(state.area)}</strong></span>
+    <span>Data: <strong>${d.toLocaleDateString('pt-BR')}</strong></span>
+    ${state.gps ? `<span>GPS: <strong>${state.gps.lat}, ${state.gps.lng}</strong></span>` : ''}
+  `;
+}
+
+function renderCards() {
+  const wrap = $('#cards');
+  wrap.innerHTML = '';
+  ITEMS.forEach((it, idx) => {
+    const data = state.items[idx];
+    const card = document.createElement('div');
+    card.className = 'item';
+    card.dataset.idx = idx;
+    card.innerHTML = `
+      <div class="item__head">
+        <span class="item__num">${idx + 1}</span>
+        <span class="item__title">${esc(it.name)}</span>
+        <span class="item__req ${it.required ? 'required' : ''}">
+          ${it.required ? 'Obrigatório' : 'Opcional'}
+        </span>
+      </div>
+      <div class="item__photos"></div>
+      <div class="item__actions">
+        <button type="button" class="btn btn--primary" data-act="camera">
+          <svg viewBox="0 0 24 24" class="icon"><path d="M4 8h3l2-3h6l2 3h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1Z" stroke-linejoin="round"/><circle cx="12" cy="13.5" r="3.5"/></svg>
+          Tirar Foto
+        </button>
+        <button type="button" class="btn btn--secondary" data-act="gallery">
+          <svg viewBox="0 0 24 24" class="icon"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="m5 17 4.5-4.5L13 16l2.5-2.5L21 19" stroke-linejoin="round"/></svg>
+          Galeria
+        </button>
+      </div>
+      <textarea placeholder="Observação (opcional)…" rows="2">${esc(data.obs)}</textarea>
+    `;
+
+    card.querySelector('[data-act="camera"]')
+        .addEventListener('click', () => openPicker(idx, 'camera'));
+    card.querySelector('[data-act="gallery"]')
+        .addEventListener('click', () => openPicker(idx, 'gallery'));
+    card.querySelector('textarea').addEventListener('input', (ev) => {
+      state.items[idx].obs = ev.target.value;
+      autosave();
+    });
+
+    wrap.appendChild(card);
+    renderThumbs(idx);
+  });
+}
+
+/** Renderiza miniaturas + estado visual (completo) de um card. */
+function renderThumbs(idx) {
+  const card = $(`.item[data-idx="${idx}"]`);
+  if (!card) return;
+  const box = card.querySelector('.item__photos');
+  const photos = state.items[idx].photos;
+
+  box.innerHTML = '';
+  photos.forEach((p, pi) => {
+    const t = document.createElement('div');
+    t.className = 'thumb';
+    t.innerHTML = `
+      <img src="${p.dataUrl}" alt="Foto ${pi + 1}" loading="lazy" />
+      <button type="button" class="thumb__del" aria-label="Remover foto">✕</button>
+    `;
+    // Toque na miniatura → substitui a foto; ✕ → remove.
+    t.querySelector('img').addEventListener('click', () => openPicker(idx, 'camera', pi));
+    t.querySelector('.thumb__del').addEventListener('click', () => {
+      state.items[idx].photos.splice(pi, 1);
+      autosave();
+      renderThumbs(idx);
+      updateProgress();
+    });
+    box.appendChild(t);
+  });
+
+  const done = ITEMS[idx].required ? photos.length > 0 : photos.length > 0;
+  card.classList.toggle('complete', done);
+
+  // Desabilita anexar quando atingir o limite por item.
+  const full = photos.length >= MAX_PHOTOS_PER_ITEM;
+  card.querySelectorAll('.item__actions .btn').forEach(b => b.disabled = full);
+}
+
+/** Abre o input de câmera ou galeria vinculado a um item. */
+function openPicker(itemIdx, mode, replaceIdx = null) {
+  pickCtx = { itemIdx, replaceIdx };
+  const input = mode === 'camera' ? $('#fileCamera') : $('#fileGallery');
+  input.value = '';        // permite escolher o mesmo arquivo de novo
+  input.click();
+}
+
+async function onFilePicked(ev) {
+  const file = ev.target.files && ev.target.files[0];
+  if (!file || !pickCtx) return;
+  const { itemIdx, replaceIdx } = pickCtx;
+  pickCtx = null;
+
+  try {
+    toast('Processando foto…');
+    const dataUrl = await compressAndStamp(file);
+    const photo = { dataUrl, at: new Date().toISOString() };
+    const photos = state.items[itemIdx].photos;
+
+    if (replaceIdx !== null && photos[replaceIdx]) photos[replaceIdx] = photo;   // substituir
+    else if (photos.length < MAX_PHOTOS_PER_ITEM) photos.push(photo);            // adicionar
+    else return toast(`Máximo de ${MAX_PHOTOS_PER_ITEM} fotos por item.`);
+
+    autosave();
+    renderThumbs(itemIdx);
+    updateProgress();
+  } catch (err) {
+    console.error(err);
+    toast('Não foi possível processar a imagem.');
+  }
+}
+
+/* ─── Compressão + carimbo (data/hora/GPS) ───────────────────── */
+
+/**
+ * Redimensiona a imagem (máx. IMG_MAX_DIM no maior lado), converte
+ * para JPEG comprimido e desenha um carimbo com data/hora e GPS.
+ * @param {File} file
+ * @returns {Promise<string>} dataURL JPEG
+ */
+function compressAndStamp(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+
+      const scale = Math.min(1, IMG_MAX_DIM / Math.max(img.width, img.height));
+      const w = Math.round(img.width * scale);
+      const h = Math.round(img.height * scale);
+
+      const canvas = document.createElement('canvas');
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+
+      // Carimbo: faixa translúcida no rodapé com data/hora (+ GPS).
+      const now = new Date();
+      const lines = [
+        `${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`,
+      ];
+      if (state.gps) lines.push(`GPS ${state.gps.lat}, ${state.gps.lng}`);
+
+      const fs = Math.max(14, Math.round(w * 0.028));
+      const pad = Math.round(fs * 0.5);
+      const bandH = pad * 2 + fs * lines.length + (lines.length - 1) * 4;
+
+      ctx.fillStyle = 'rgba(0,0,0,.55)';
+      ctx.fillRect(0, h - bandH, w, bandH);
+      ctx.fillStyle = '#fff';
+      ctx.font = `600 ${fs}px -apple-system, Segoe UI, Roboto, Arial, sans-serif`;
+      ctx.textBaseline = 'top';
+      lines.forEach((ln, i) => ctx.fillText(ln, pad, h - bandH + pad + i * (fs + 4)));
+
+      resolve(canvas.toDataURL('image/jpeg', IMG_QUALITY));
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('imagem inválida')); };
+    img.src = url;
+  });
+}
+
+/* ─── Progresso e validação ──────────────────────────────────── */
+
+/** Progresso = itens obrigatórios com foto / total de obrigatórios. */
+function updateProgress() {
+  const req = ITEMS.map((it, i) => ({ it, data: state.items[i] }))
+                   .filter(x => x.it.required);
+  const done = req.filter(x => x.data.photos.length > 0).length;
+  const pct = Math.round((done / req.length) * 100);
+
+  $('#progressBar').style.width = pct + '%';
+  $('#progressLabel').textContent = `${pct}% · ${done}/${req.length} itens obrigatórios`;
+  $('#progressWrap').setAttribute('aria-valuenow', pct);
+  $('#btnGenerate').disabled = pct < 100;
+}
+
+function validateChecklist() {
+  const missing = ITEMS
+    .map((it, i) => (it.required && state.items[i].photos.length === 0) ? it.name : null)
+    .filter(Boolean);
+  if (missing.length) {
+    toast(`Faltam fotos em: ${missing.join(', ')}`);
+    return false;
+  }
+  return true;
+}
+
+/* ─── Geração do PDF ─────────────────────────────────────────── */
+
+async function onGenerate() {
+  if (!validateChecklist()) return;
+
+  const btn = $('#btnGenerate');
+  btn.disabled = true;
+  btn.textContent = 'Gerando PDF…';
+
+  try {
+    // window.PDFReport é definido em pdf.js
+    lastPdf = await window.PDFReport.generate(state, ITEMS);
+    downloadPdf();               // baixa imediatamente
+    bumpStats(lastPdf.filename);
+    clearDraft();                // relatório concluído → limpa rascunho
+    $('#doneFilename').textContent = lastPdf.filename;
+    $('#btnShare').classList.toggle('hidden', !canShareFiles());
+    showView('done');
+    $('#progressWrap').classList.add('hidden');
+    document.body.classList.remove('has-progress');
+  } catch (err) {
+    console.error(err);
+    toast('Erro ao gerar o PDF. Tente novamente.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = 'Gerar Relatório';
+  }
+}
+
+function downloadPdf() {
+  if (!lastPdf) return;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(lastPdf.blob);
+  a.download = lastPdf.filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+}
+
+/* ─── Tela final ─────────────────────────────────────────────── */
+
+function bindDone() {
+  $('#btnDownload').addEventListener('click', downloadPdf);
+  $('#btnShare').addEventListener('click', sharePdf);
+  $('#btnNew').addEventListener('click', () => location.reload());
+}
+
+function canShareFiles() {
+  return !!(navigator.canShare && lastPdf &&
+    navigator.canShare({ files: [new File([lastPdf.blob], lastPdf.filename, { type: 'application/pdf' })] }));
+}
+
+/** Compartilhamento nativo (Web Share API) — SeATalk/WhatsApp. */
+async function sharePdf() {
+  if (!lastPdf) return;
+  const file = new File([lastPdf.blob], lastPdf.filename, { type: 'application/pdf' });
+  try {
+    await navigator.share({
+      files: [file],
+      title: 'ARGUS · Relatório Fotográfico de Operações',
+      text: `${state.area} · Turno ${state.turno}`,
+    });
+  } catch (err) {
+    if (err.name !== 'AbortError') toast('Compartilhamento não suportado neste dispositivo.');
+  }
+}
+
+/* ─── Utilidades ─────────────────────────────────────────────── */
+
+function showView(name) {
+  Object.entries(views).forEach(([k, el]) => el.classList.toggle('hidden', k !== name));
+  window.scrollTo({ top: 0 });
+}
+
+let toastTimer = null;
+function toast(msg) {
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+}
+
+/** Escapa HTML para inserção segura via innerHTML. */
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+/* ─── Limpeza de service worker legado ───────────────────────── */
+
+function registerServiceWorker() {
+  // Versão single-file: NÃO usa service worker. Este bloco remove
+  // qualquer SW e cache antigos que ainda existam no dispositivo,
+  // garantindo que todos passem a receber sempre a versão publicada.
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.getRegistrations()
+      .then(regs => regs.forEach(r => r.unregister()))
+      .catch(() => {});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(keys => keys.forEach(k => caches.delete(k))).catch(() => {});
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   INTEGRAÇÃO FUTURA (Google Drive / OneDrive / SharePoint)
+   ---------------------------------------------------------------
+   A arquitetura já está preparada: após gerar o PDF, basta chamar
+   um "uploader" com o Blob. Exemplo de contrato:
+
+   const Uploader = {
+     async upload(blob, filename, meta) {
+       // 1) Google Drive: POST multipart p/ Apps Script Web App
+       //    (Content-Type: text/plain p/ evitar preflight CORS)
+       // 2) SharePoint/OneDrive: Microsoft Graph API + MSAL.js
+       // meta = { email, turno, area, gps, date } p/ indexação
+     }
+   };
+
+   Chamar em onGenerate(), logo após bumpStats():
+   await Uploader.upload(lastPdf.blob, lastPdf.filename, {...state});
+   ═══════════════════════════════════════════════════════════════ */
+
+  </script>
+</body>
+</html>
