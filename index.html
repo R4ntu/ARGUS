@@ -653,7 +653,8 @@ textarea { resize: vertical; min-height: 64px; }
 
   <script>
 /* ═══════════════════════════════════════════════════════════════
-   pdf.js — ARGUS · Geração do Relatório Fotográfico em PDF (jsPDF)
+   pdf.js — ARGUS · Relatório Fotográfico compacto (jsPDF)
+   Layout em grade (2 colunas): todos os itens em 1–2 páginas.
    Expõe window.PDFReport.generate(state, items)
    → Promise<{ blob, filename }>
    ═══════════════════════════════════════════════════════════════ */
@@ -666,188 +667,170 @@ window.PDFReport = (() => {
   const ORANGE = [238, 77, 45];
   const DARK   = [31, 31, 35];
   const GRAY   = [107, 107, 114];
-  const LIGHT  = [245, 245, 247];
+  const LIGHT  = [240, 240, 242];
+  const GREEN  = [22, 163, 74];
 
   const PAGE_W = 210, PAGE_H = 297;
-  const M = 15;                       // margem
-  const CW = PAGE_W - M * 2;          // largura útil
+  const M = 12;                        // margem
+  const CW = PAGE_W - M * 2;           // largura útil (186)
+  const GAP = 5;                       // espaço entre células
+  const COL_W = (CW - GAP) / 2;        // largura de cada célula
 
-  /**
-   * Gera o PDF completo.
-   * @param {object} state — estado da aplicação (app.js)
-   * @param {Array}  items — definição dos itens do checklist
-   */
+  /* Alturas da célula compacta */
+  const TITLE_H = 7;                   // barra do título do item
+  const PHOTO_H = 50;                  // área da(s) foto(s)
+  const OBS_H   = 10;                  // observação (até 2 linhas)
+  const CELL_H  = TITLE_H + PHOTO_H + OBS_H + 2;
+  const FOOTER_Y = PAGE_H - 10;
+
   async function generate(state, items) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
-
     const now = new Date();
-    drawCover(doc, state, items, now);
 
-    /* ── Uma seção por item (nome + foto(s) + observação) ── */
-    for (let i = 0; i < items.length; i++) {
-      const def = items[i];
-      const data = state.items[i];
-      if (!def.required && data.photos.length === 0 && !data.obs.trim()) continue; // pula extras vazios
+    /* Itens a imprimir: obrigatórios sempre; opcionais só se preenchidos. */
+    const printable = items
+      .map((def, i) => ({ def, data: state.items[i], num: i + 1 }))
+      .filter(x => x.def.required || x.data.photos.length > 0 || x.data.obs.trim());
 
+    let y = drawMainHeader(doc, state, now);
+
+    /* ── Grade 2 colunas ─────────────────────────────────────── */
+    for (let i = 0; i < printable.length; i++) {
+      const col = i % 2;
+      if (col === 0 && i > 0) y += CELL_H + GAP;               // nova linha
+      if (col === 0 && y + CELL_H > FOOTER_Y - 4) {            // nova página
+        doc.addPage();
+        y = drawCompactHeader(doc, state);
+      }
+      const x = M + col * (COL_W + GAP);
+      await drawItemCell(doc, x, y, printable[i]);
+    }
+    y += CELL_H + GAP;
+
+    /* ── Assinatura (na mesma página, se couber) ─────────────── */
+    const SIGN_H = 26;
+    if (y + SIGN_H > FOOTER_Y - 2) {
       doc.addPage();
-      drawPageHeader(doc, state);
-      let y = 32;
+      y = drawCompactHeader(doc, state);
+    }
+    drawSignature(doc, y, state, now);
 
-      // Título do item
-      doc.setFillColor(...ORANGE);
-      doc.roundedRect(M, y, 10, 10, 2.5, 2.5, 'F');
-      doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(12);
-      doc.text(String(i + 1), M + 5, y + 6.6, { align: 'center' });
-      doc.setTextColor(...DARK).setFontSize(15);
-      doc.text(def.name, M + 14, y + 7);
-      y += 16;
+    addFooters(doc);
+    return { blob: doc.output('blob'), filename: buildFilename(state, now) };
+  }
 
-      // Foto(s) — centralizadas, mantendo proporção
-      for (const photo of data.photos) {
-        const dim = await imageSize(photo.dataUrl);
-        const maxW = CW, maxH = 150;
-        const s = Math.min(maxW / dim.w, maxH / dim.h);
+  /* ── Cabeçalho principal (página 1) ─────────────────────────── */
+
+  function drawMainHeader(doc, state, now) {
+    doc.setFillColor(...ORANGE);
+    doc.rect(0, 0, PAGE_W, 22, 'F');
+
+    // emblema (olho)
+    const ex = M + 6, ey = 11;
+    doc.setFillColor(255, 255, 255);
+    doc.ellipse(ex, ey, 6.5, 3.8, 'F');
+    doc.setFillColor(...ORANGE);
+    doc.circle(ex, ey, 2.2, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.circle(ex + 0.8, ey - 0.8, 0.7, 'F');
+
+    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(16);
+    doc.text('ARGUS', ex + 10, 10);
+    doc.setFont('helvetica', 'normal').setFontSize(9);
+    doc.text('Relatório Fotográfico de Operações · Organização de Área · 5S', ex + 10, 16);
+
+    doc.setFont('helvetica', 'bold').setFontSize(9);
+    doc.text(`${state.area} · Turno ${state.turno}`, PAGE_W - M, 10, { align: 'right' });
+    doc.setFont('helvetica', 'normal').setFontSize(8);
+    doc.text(`${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`,
+             PAGE_W - M, 15.5, { align: 'right' });
+
+    // faixa de informações
+    doc.setFillColor(...LIGHT);
+    doc.rect(0, 22, PAGE_W, 8, 'F');
+    doc.setTextColor(...DARK).setFontSize(8.5);
+    const gps = state.gps ? `   |   GPS: ${state.gps.lat}, ${state.gps.lng}` : '';
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Gestor: ${state.manager}   |   ${state.email}${gps}`, M, 27.2);
+
+    return 34; // y inicial da grade
+  }
+
+  /* ── Cabeçalho compacto (páginas seguintes) ─────────────────── */
+
+  function drawCompactHeader(doc, state) {
+    doc.setFillColor(...ORANGE);
+    doc.rect(0, 0, PAGE_W, 12, 'F');
+    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(9);
+    doc.text('ARGUS · Relatório Fotográfico de Operações', M, 7.8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`${state.area} · Turno ${state.turno}`, PAGE_W - M, 7.8, { align: 'right' });
+    return 18;
+  }
+
+  /* ── Célula de um item: título + foto(s) + observação ───────── */
+
+  async function drawItemCell(doc, x, y, { def, data, num }) {
+    // moldura
+    doc.setDrawColor(...LIGHT).setLineWidth(0.4);
+    doc.roundedRect(x, y, COL_W, CELL_H, 1.6, 1.6, 'S');
+
+    // barra de título
+    doc.setFillColor(...ORANGE);
+    doc.roundedRect(x, y, COL_W, TITLE_H, 1.6, 1.6, 'F');
+    doc.rect(x, y + TITLE_H - 2, COL_W, 2, 'F'); // corrige cantos inferiores
+    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(9);
+    doc.text(`${num}. ${def.name}`, x + 2.5, y + 4.9);
+
+    // foto(s) — divide a largura entre até 3 fotos
+    const py = y + TITLE_H + 1.5;
+    const n = data.photos.length;
+    if (n > 0) {
+      const subW = (COL_W - 3 - (n - 1) * 1.5) / n;
+      for (let i = 0; i < n; i++) {
+        const dim = await imageSize(data.photos[i].dataUrl);
+        const s = Math.min(subW / dim.w, (PHOTO_H - 1) / dim.h);
         const w = dim.w * s, h = dim.h * s;
-        if (y + h > PAGE_H - 30) { doc.addPage(); drawPageHeader(doc, state); y = 32; }
-        const x = M + (CW - w) / 2;
-        doc.setDrawColor(...LIGHT).setLineWidth(0.4);
-        doc.roundedRect(x - 1, y - 1, w + 2, h + 2, 2, 2, 'S');
-        doc.addImage(photo.dataUrl, 'JPEG', x, y, w, h, undefined, 'FAST');
-        y += h + 6;
+        const px = x + 1.5 + i * (subW + 1.5) + (subW - w) / 2;
+        doc.addImage(data.photos[i].dataUrl, 'JPEG',
+                     px, py + (PHOTO_H - 1 - h) / 2, w, h, undefined, 'FAST');
       }
-      if (data.photos.length === 0) {
-        doc.setTextColor(...GRAY).setFont('helvetica', 'italic').setFontSize(10);
-        doc.text('Sem foto anexada.', M, y);
-        y += 8;
-      }
-
-      // Observação
-      doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...ORANGE);
-      doc.text('OBSERVAÇÃO', M, y + 2);
-      doc.setFont('helvetica', 'normal').setTextColor(...DARK).setFontSize(11);
-      const obs = data.obs.trim() || '—';
-      const lines = doc.splitTextToSize(obs, CW);
-      doc.text(lines, M, y + 8);
+    } else {
+      doc.setTextColor(...GRAY).setFont('helvetica', 'italic').setFontSize(8);
+      doc.text('Sem foto anexada.', x + COL_W / 2, py + PHOTO_H / 2, { align: 'center' });
     }
 
-    drawSignaturePage(doc, state, now);
-    addFooters(doc);
-
-    const filename = buildFilename(state, now);
-    return { blob: doc.output('blob'), filename };
+    // observação (até 2 linhas)
+    const oy = y + TITLE_H + PHOTO_H + 3.5;
+    doc.setFont('helvetica', 'normal').setFontSize(7.5);
+    const obs = data.obs.trim();
+    if (obs) {
+      doc.setTextColor(...DARK);
+      let lines = doc.splitTextToSize('Obs: ' + obs, COL_W - 5);
+      if (lines.length > 2) { lines = lines.slice(0, 2); lines[1] = lines[1].slice(0, -1) + '…'; }
+      doc.text(lines, x + 2.5, oy);
+    } else {
+      doc.setTextColor(...GRAY);
+      doc.text('Obs: —', x + 2.5, oy);
+    }
   }
 
-  /* ── Capa / cabeçalho principal ─────────────────────────────── */
+  /* ── Assinatura compacta ────────────────────────────────────── */
 
-  function drawCover(doc, state, items, now) {
-    // Faixa laranja superior
-    doc.setFillColor(...ORANGE);
-    doc.rect(0, 0, PAGE_W, 62, 'F');
+  function drawSignature(doc, y, state, now) {
+    doc.setDrawColor(...LIGHT).setLineWidth(0.4);
+    doc.roundedRect(M, y, CW, 24, 1.6, 1.6, 'S');
 
-    // Emblema ARGUS (olho) desenhado em vetor
-    const ex = M + 8, ey = 20;
-    doc.setFillColor(255, 255, 255);
-    doc.ellipse(ex, ey, 10, 6, 'F');              // esclera
-    doc.setFillColor(...ORANGE);
-    doc.circle(ex, ey, 3.4, 'F');                 // íris/pupila
-    doc.setFillColor(255, 255, 255);
-    doc.circle(ex + 1.2, ey - 1.2, 0.9, 'F');     // brilho
-
-    // Marca + subtítulo
-    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(26);
-    doc.setCharSpace?.(1.2);
-    doc.text('ARGUS', ex + 15, 24);
-    doc.setCharSpace?.(0);
-    doc.setFont('helvetica', 'normal').setFontSize(10);
-    doc.text('Auditoria e Registro Geral de Unidades Shopee', ex + 15, 31);
-
-    doc.setFont('helvetica', 'bold').setFontSize(16);
-    doc.text('Relatório Fotográfico de Operações', M, 44);
-    doc.setFont('helvetica', 'normal').setFontSize(10);
-    doc.text('Organização de Área · 5S · Encerramento de Turno', M, 50.5);
-    doc.setFont('helvetica', 'italic').setFontSize(9);
-    doc.text('Os cem olhos da operação — nada encerra o turno sem ser registrado.', M, 56.5);
-
-    // Bloco de informações
-    let y = 76;
-    doc.setTextColor(...DARK).setFont('helvetica', 'bold').setFontSize(13);
-    doc.text('Informações do Relatório', M, y);
-    doc.setDrawColor(...ORANGE).setLineWidth(0.8);
-    doc.line(M, y + 2.5, M + 62, y + 2.5);
-    y += 12;
-
-    const rows = [
-      ['Data',   now.toLocaleDateString('pt-BR')],
-      ['Hora',   now.toLocaleTimeString('pt-BR')],
-      ['Gestor', state.manager || '—'],
-      ['E-mail', state.email || '—'],
-      ['Turno',  state.turno || '—'],
-      ['Área',   state.area || '—'],
-    ];
-    if (state.gps) rows.push(['Localização', `${state.gps.lat}, ${state.gps.lng}`]);
-
-    rows.forEach(([k, v], i) => {
-      const ry = y + i * 11;
-      if (i % 2 === 0) { doc.setFillColor(...LIGHT); doc.rect(M, ry - 6.5, CW, 11, 'F'); }
-      doc.setFont('helvetica', 'bold').setFontSize(10).setTextColor(...GRAY);
-      doc.text(k.toUpperCase(), M + 3, ry);
-      doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(...DARK);
-      doc.text(String(v), M + 45, ry);
-    });
-
-    // Sumário de itens
-    let sy = y + rows.length * 11 + 14;
-    doc.setFont('helvetica', 'bold').setFontSize(13).setTextColor(...DARK);
-    doc.text('Itens do Checklist', M, sy);
-    doc.setDrawColor(...ORANGE).line(M, sy + 2.5, M + 45, sy + 2.5);
-    sy += 10;
-    doc.setFont('helvetica', 'normal').setFontSize(10);
-    state.items.forEach((it, i) => {
-      const has = it.photos.length > 0;
-      doc.setFont('helvetica', 'bold').setTextColor(...(has ? [22, 163, 74] : GRAY));
-      doc.text(has ? 'OK' : '--', M + 2, sy);
-      doc.setFont('helvetica', 'normal').setTextColor(...DARK);
-      doc.text(`${i + 1}. ${items[i].name}`, M + 12, sy);
-      sy += 6.5;
-    });
-  }
-
-  /* ── Cabeçalho compacto das páginas internas ────────────────── */
-
-  function drawPageHeader(doc, state) {
-    doc.setFillColor(...ORANGE);
-    doc.rect(0, 0, PAGE_W, 18, 'F');
-    doc.setTextColor(255).setFont('helvetica', 'bold').setFontSize(10);
-    doc.text('ARGUS · Relatório Fotográfico de Operações', M, 11.5);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`${state.area} · Turno ${state.turno}`, PAGE_W - M, 11.5, { align: 'right' });
-  }
-
-  /* ── Página de assinatura ───────────────────────────────────── */
-
-  function drawSignaturePage(doc, state, now) {
-    doc.addPage();
-    drawPageHeader(doc, state);
-
-    let y = 60;
-    doc.setTextColor(...DARK).setFont('helvetica', 'bold').setFontSize(14);
-    doc.text('Assinatura Digital', PAGE_W / 2, y, { align: 'center' });
-    y += 34;
-
-    // Nome do gestor em estilo "assinatura"
-    doc.setFont('times', 'italic').setFontSize(24).setTextColor(...ORANGE);
-    doc.text(state.manager || '—', PAGE_W / 2, y, { align: 'center' });
-    y += 8;
-    doc.setDrawColor(...DARK).setLineWidth(0.5);
-    doc.line(PAGE_W / 2 - 55, y, PAGE_W / 2 + 55, y);
-    y += 8;
-    doc.setFont('helvetica', 'normal').setFontSize(11).setTextColor(...DARK);
-    doc.text('Gestor Responsável', PAGE_W / 2, y, { align: 'center' });
-    y += 7;
-    doc.setFontSize(9).setTextColor(...GRAY);
+    doc.setFont('times', 'italic').setFontSize(15).setTextColor(...ORANGE);
+    doc.text(state.manager || '—', PAGE_W / 2, y + 10, { align: 'center' });
+    doc.setDrawColor(...DARK).setLineWidth(0.4);
+    doc.line(PAGE_W / 2 - 42, y + 12.5, PAGE_W / 2 + 42, y + 12.5);
+    doc.setFont('helvetica', 'bold').setFontSize(8.5).setTextColor(...DARK);
+    doc.text('Gestor Responsável — Assinatura Digital', PAGE_W / 2, y + 17, { align: 'center' });
+    doc.setFont('helvetica', 'normal').setFontSize(7.5).setTextColor(...GRAY);
     doc.text(`${state.email} · ${now.toLocaleDateString('pt-BR')} ${now.toLocaleTimeString('pt-BR')}`,
-             PAGE_W / 2, y, { align: 'center' });
+             PAGE_W / 2, y + 21, { align: 'center' });
   }
 
   /* ── Rodapé em todas as páginas ─────────────────────────────── */
@@ -856,11 +839,11 @@ window.PDFReport = (() => {
     const n = doc.getNumberOfPages();
     for (let p = 1; p <= n; p++) {
       doc.setPage(p);
-      doc.setDrawColor(...LIGHT).setLineWidth(0.4);
-      doc.line(M, PAGE_H - 14, PAGE_W - M, PAGE_H - 14);
-      doc.setFont('helvetica', 'normal').setFontSize(8).setTextColor(...GRAY);
-      doc.text('Documento gerado automaticamente pelo ARGUS.', M, PAGE_H - 8);
-      doc.text(`Página ${p} de ${n}`, PAGE_W - M, PAGE_H - 8, { align: 'right' });
+      doc.setDrawColor(...LIGHT).setLineWidth(0.3);
+      doc.line(M, FOOTER_Y - 3.5, PAGE_W - M, FOOTER_Y - 3.5);
+      doc.setFont('helvetica', 'normal').setFontSize(7).setTextColor(...GRAY);
+      doc.text('Documento gerado automaticamente pelo ARGUS.', M, FOOTER_Y);
+      doc.text(`Página ${p} de ${n}`, PAGE_W - M, FOOTER_Y, { align: 'right' });
     }
   }
 
